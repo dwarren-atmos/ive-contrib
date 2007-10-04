@@ -1,0 +1,42 @@
+
+#
+# Architecture dependent compilation flags
+#
+
+TOPDIR=.
+
+BINDIR = ../bin
+LIBDIR = ../lib
+INCDIR = ../include
+
+#
+# Destination of executable and configuration files
+#
+        prefix = .
+
+#
+# Set this variable to where are on your system NetCDF 
+#
+        NETCDFINC = /usr/include
+        NETCDFLIB = /usr/lib
+        ZLIBINC = /usr/include
+        ZLIBLIB = /usr/lib
+#
+# Compilers and archiver needed to get executable
+#
+        CC  = icc
+        AR  = ar
+
+################################################################################
+#
+# Compilation flags for Linux
+#
+       CFLAGS   = -O -I$(INCDIR) -I$(NETCDFINC) -I$(ZLIBINC)
+       ARFLAGS = -rv
+       LDFLAGS = -O -L$(ZLIBLIB) -L$(NETCDFLIB) -L$(LIBDIR)
+       LINK = -lmm5io -lmm5proj -lnetcdf -lm -lz
+#
+#                             
+################################################################################
+
+

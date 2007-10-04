@@ -1,0 +1,25 @@
+
+        *****************************************************
+        *                                                   *
+        *         University of L'Aquila -- CETEMPS         *
+        *                  L'Aquila, Italy                  *
+        *                                                   *
+        *****************************************************
+
+
+        Comments and feedback to:
+                Graziano.Giuliani@aquila.infn.it
+
+ MM5 format to netcdf format converter.
+
+ 1) Should read both V2 and V3 formats.
+ 2) Reads normal and gzipped inputs.
+ 3) compresser utility will reduce size of data to 2 byte precision
+    using add_offset and scale_factor attributes for 2D and 3D vars.
+
+ To compile please edit ARCH.opt file to reflect your machine
+ settings. Should compile without warnings on Linux.
+
+ No warranty is given and You can use as You like.
+
+   Graziano.
