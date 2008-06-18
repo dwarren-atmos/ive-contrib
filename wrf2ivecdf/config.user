@@ -1,0 +1,99 @@
+.SUFFIXES:
+.SUFFIXES: .o .f .F .c
+
+SHELL=/bin/sh
+MAKE = make
+RM = rm -f
+AR=ar rc
+
+machine := ${shell /bin/uname -m}
+node := ${shell /bin/uname -n}
+OS := ${shell /bin/uname -s}
+
+ifeq (${machine},ia64)
+  ifeq (${node},eagle-0)
+
+	IA64_PREPROCESS=-fpp -convert big_endian -assume byterecl
+	IA64_OPTIMIZATION=-O2 -u -align -mp -tpp2 -pad
+	IA64_KIND=-i4 -r8
+	IA64_KIND=
+	IA64_LANGUAGE=$(IA64_KIND) -align -WB
+	IA64_CC=icc
+
+	F90=ifort
+	FFLAGS = $(IA64_PREPROCESS) $(IA64_OPTIMIZATION) $(IA64_LANGUAGE)
+	LD=$(F90)
+	LDFLAGS=$(FFLAGS)
+	CC=icc
+	CFLAGAS=
+
+	LIBCDF=
+	INCCDF=
+	NETCDFCOMP= -lnetcdf
+
+	EXTRALIBS=
+
+  else
+
+	F90=ifort
+	FFLAGS =  -O2 -align -u -convert big_endian -pad
+	LD=$(F90)
+	LDFLAGS=$(FFLAGS)
+
+	LIBCDF = /usr/local/lib/
+	INCCDF = /usr/include/
+	NETCDFCOMP = -L$(LIBCDF) -lnetcdf-ifort -I$(INCCDF)
+
+	EXTRALIBS = 
+  endif
+
+else
+ifeq (${machine},i686)
+
+	F90=ifort
+	FFLAGS = -u -O2 -axW -align -convert big_endian -xW -pad
+	LD=$(F90)
+	LDFLAGS=$(FFLAGS)
+
+	LIBCDF = /usr/local/lib/
+	INCCDF = /usr/local/include/
+	NETCDFCOMP = -L$(LIBCDF) -lnetcdf -I$(INCCDF)
+
+	EXTRALIBS = 
+else
+ifeq (${machine},x86_64)
+
+	F90=ifort
+	FFLAGS = -u -O2 -axW -align -convert big_endian -xW -pad
+	LD=$(F90)
+	LDFLAGS=$(FFLAGS)
+
+	LIBCDF = /usr/lib/
+	INCCDF = /usr/include/
+	NETCDFCOMP = -L$(LIBCDF) -lnetcdf -lnetcdff -I$(INCCDF)
+
+	EXTRALIBS = 
+else
+ifeq (${machine},IP35)
+	SGI_IRIX   = -O2 -64 -r12000 -mips4 -OPT:Olimit=0
+	SGI_ATMOSA = $(SGI_IRIX) -apo -mp -r8
+
+	F90=f90
+	FFLAGS=$(SGI_ATMOSA)
+	LD=$(F90)
+	LDFLAGS=$(FFLAGS)
+
+	LIBCDF=
+	INCCDF=
+	NETCDFCOMP= -lnetcdf
+
+	EXTRALIBS=
+
+endif
+endif
+endif
+endif
+
+
+RM_CMD = $(RM) *.o *.a *.mod *.exe make.log 
+
