@@ -29,7 +29,7 @@ c      integer :: xmem,ymem,zmem
 
       real :: ppp, zmin_w, zmin_m, zmax_w, zmax_m
 
-      real :: p_top(1), xmin,xmax,ymin,ymax,zmin,zmax,dx,dy,
+      real :: p_top(1), xmin,xmax,ymin,ymax,zmin,zmax,dx,dy,dz,
      &        stagx, stagy
 
       data vars/
@@ -142,8 +142,8 @@ c      end do
       call write_variable_vec(fid_out, 'P_TOP', 1, p_top)
       deallocate(time,hgt)
 
-      zmax_w = p_top(1) ; zmax_m = 10e6  ! top of domain
-      zmin_w = p_top(1) ; zmin_m = p_top(1) ! bottom of domain
+!      zmax_w = p_top(1) ; zmax_m = 10e6  ! top of domain
+!      zmin_w = p_top(1) ; zmin_m = p_top(1) ! bottom of domain
 
       allocate(pbtop(nx,ny), pbbot(nx,ny), 
      &         ptop(nx,ny), pbot(nx,ny), psfc(nx,ny))
@@ -154,13 +154,17 @@ c      end do
         call get_variable2d(fid_in, 'PSFC', nx, ny, n, psfc)
         call get_variable3d_local(fid_in,'P',1,nx,1,ny,nz,nz,n,ptop)
         call get_variable3d_local(fid_in,'P',1,nx,1,ny, 1, 1,n,pbot)
-        do i=1,nx ; do j=1,ny
-          ppp=psfc(i,j)            ; if(ppp.gt.zmin_w) zmin_w = ppp
-          ppp=pbot(i,j)+pbbot(i,j) ; if(ppp.gt.zmin_m) zmin_m = ppp
-          ppp=ptop(i,j)+pbtop(i,j) ; if(ppp.lt.zmax_m) zmax_m = ppp
-        end do ; end do
+!        do i=1,nx ; do j=1,ny
+!          ppp=psfc(i,j)            ; if(ppp.gt.zmin_w) zmin_w = ppp
+!          ppp=pbot(i,j)+pbbot(i,j) ; if(ppp.gt.zmin_m) zmin_m = ppp
+!          ppp=ptop(i,j)+pbtop(i,j) ; if(ppp.lt.zmax_m) zmax_m = ppp
+!        end do ; end do
       end do
       deallocate(pbtop, pbbot, ptop, pbot, psfc)
+
+      !zmin_w=znw(nzp1) ; zmax_w=znw(1); zmin_m=znu(nz) ; zmax_m=znu(1);
+      zmin_w=znw(1) ; zmax_w=znw(nzp1); zmin_m=znu(1) ; zmax_m=znu(nz);
+      dz = abs(zmin_w - zmax_w)/nz
 
       xmin=0. ; xmax=(nxp1-1)*dx ; ymin=0. ; ymax=(nyp1-1)*dy
       !zmin=znw(nzp1)*mumin + p_top(1) ; zmax=znw(1)*mumax + p_top(1)
@@ -169,7 +173,7 @@ c      end do
       call define_mode(fid_out,start_define)
       call setive_gatts(fid_out,'x','x',xmin,xmax,dx,'m','km')
       call setive_gatts(fid_out,'y','y',ymin,ymax,dy,'m','km')
-      call setive_gatts(fid_out,'z','p',zmin_w,zmax_w,0,'Pa','hPa')
+      call setive_gatts(fid_out,'z','eta',zmin_w,zmax_w,dz,'','')
       call setive_gatts(fid_out,'t','t',0,0,0,'min','hr')
       call define_mode(fid_out,stop_define)
 
