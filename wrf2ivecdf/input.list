@@ -1,0 +1,4 @@
+&input_data
+infile="./data/wrfout_d01_t0300_nosw_rh000_run2.cdf" 
+vars= "U" "V" "W" "PH" "PHB" "P" "PB" "T" "MU" "MUB" "PSFC" "T2"
+nvars=12 /

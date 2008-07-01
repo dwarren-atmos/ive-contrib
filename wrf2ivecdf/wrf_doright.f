@@ -4,12 +4,13 @@
 
       character(len=80) :: infile, outfile
       character(len=2), parameter :: path='./'
+      character(len=10), parameter :: namefile='input.list'
 
-      integer :: fid_in, fid_out , rcode
-      integer, parameter :: nvars=11 !nvars=59
+      integer :: fid_in, fid_out , fid_name, rcode
+      integer :: nvars
       integer :: n, i, j, k
       real, parameter :: missing = -9999.0
-      character(len=10) :: vars(nvars),varnam
+      character(len=10) :: vars(80),varnam
       character(len=80) :: units,descrp
 
       character(len=3) :: memord
@@ -32,7 +33,8 @@ c      integer :: xmem,ymem,zmem
       real :: p_top(1), xmin,xmax,ymin,ymax,zmin,zmax,dx,dy,dz,
      &        stagx, stagy
 
-      data vars/
+      namelist/input_data/infile,nvars,vars
+      data vars(1:11)/
      &  'U','V','W','PH','PHB','P','PB','T','MU','MUB','PSFC'
      &/
 c      data vars/
@@ -47,10 +49,14 @@ c     &, 'RUBLTEN','RVBLTEN','RTHBLTEN','TMN','XLAND','UST'
 c     &, 'PBLH','HFX','QFX','LH','SNOWC'
 c     &/
 
+      nvars=11
+      open(101, file=namefile, status='old')
+      read(101,NML=input_data)
+
       allocate(ix(nvars),iy(nvars),iz(nvars),it(nvars))
       allocate(xmem(nvars),ymem(nvars),zmem(nvars))
 
-      infile='./data/wrfout_d01_t0300_nosw_rh000_run2.cdf'
+!      infile='./data/wrfout_d01_t0300_nosw_rh000_run2.cdf'
       outfile='./data/wrf_doright.cdf'
 
       call open_file(infile , nf_nowrite, fid_in )
@@ -164,7 +170,7 @@ c      end do
 
       !zmin_w=znw(nzp1) ; zmax_w=znw(1); zmin_m=znu(nz) ; zmax_m=znu(1);
       zmin_w=znw(1) ; zmax_w=znw(nzp1); zmin_m=znu(1) ; zmax_m=znu(nz);
-      dz = abs(zmin_w - zmax_w)/nz
+      dz = (zmax_w - zmin_w)/nz
 
       xmin=0. ; xmax=(nxp1-1)*dx ; ymin=0. ; ymax=(nyp1-1)*dy
       !zmin=znw(nzp1)*mumin + p_top(1) ; zmax=znw(1)*mumax + p_top(1)
@@ -327,12 +333,12 @@ c        if(rcode.ne.nf_noerr) call handle_err('x_min')
 c        if(rcode.ne.nf_noerr) call handle_err('x_max')
       end if
 
-      if(delta.gt.0) then
-        write(attname,200) trim(dir),'_delta'
-        rcode=nf_put_att_real(fid,nf_global,
-     &                        trim(attname),nf_float,1,delta)
+c      if(delta.gt.0) then
+      write(attname,200) trim(dir),'_delta'
+      rcode=nf_put_att_real(fid,nf_global,
+     &     trim(attname),nf_float,1,delta)
 c        if(rcode.ne.nf_noerr) call handle_err('x_delta')
-      end if
+c      end if
 
       if(len(trim(domunits)).gt.0) then
         write(attname,200) trim(dir),'_units'
