@@ -34,6 +34,7 @@ c      integer :: xmem,ymem,zmem
      &        stagx, stagy
 
       namelist/input_data/infile,nvars,vars
+      namelist/output_data/outfile
       data vars(1:11)/
      &  'U','V','W','PH','PHB','P','PB','T','MU','MUB','PSFC'
      &/
@@ -49,15 +50,16 @@ c     &, 'RUBLTEN','RVBLTEN','RTHBLTEN','TMN','XLAND','UST'
 c     &, 'PBLH','HFX','QFX','LH','SNOWC'
 c     &/
 
+      infile='./data/wrf_input.cdf'
+      outfile='./data/wrf_doright.cdf'
+
       nvars=11
       open(101, file=namefile, status='old')
       read(101,NML=input_data)
+      read(101,NML=output_data)
 
       allocate(ix(nvars),iy(nvars),iz(nvars),it(nvars))
       allocate(xmem(nvars),ymem(nvars),zmem(nvars))
-
-!      infile='./data/wrfout_d01_t0300_nosw_rh000_run2.cdf'
-      outfile='./data/wrf_doright.cdf'
 
       call open_file(infile , nf_nowrite, fid_in )
       call create_file(outfile, nf_write , fid_out)
@@ -245,7 +247,7 @@ c      end do
           !zmin=znw(iz)*mumin + p_top(1) ; zmax=znw(1)*mumax + p_top(1)
           zmin=zmin_w ; zmax=zmax_w
         else
-          zmin = 0.0 ; zmax = 0.0
+          zmin = 1.0 ; zmax = 1.0
         end if
 
         call setive_vatts(fid_out,varid,'x',xmin,xmax,units,descrp)
@@ -334,9 +336,9 @@ c        if(rcode.ne.nf_noerr) call handle_err('x_max')
       end if
 
 c      if(delta.gt.0) then
-      write(attname,200) trim(dir),'_delta'
-      rcode=nf_put_att_real(fid,nf_global,
-     &     trim(attname),nf_float,1,delta)
+        write(attname,200) trim(dir),'_delta'
+        rcode=nf_put_att_real(fid,nf_global,
+     &                        trim(attname),nf_float,1,delta)
 c        if(rcode.ne.nf_noerr) call handle_err('x_delta')
 c      end if
 
