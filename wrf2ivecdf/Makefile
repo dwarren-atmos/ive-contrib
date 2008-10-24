@@ -12,7 +12,7 @@ targets = wrf_doright
 all : ${targets} 
 
 .f.o:
-	$(F90) $(FFLAGS) -module $(MODLIB) -c $<
+	$(F90) $(FFLAGS) -I/usr/include -I. -module $(MODLIB) -c $<
 
 wrf_doright : ${wrf_nogood}
 	$(F90) $(FFLAGS) ${MODS} $< -o $(BIN)/$@.exe $(NETCDFCOMP) $(EXTRALIBS)

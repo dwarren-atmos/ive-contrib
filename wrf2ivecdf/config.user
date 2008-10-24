@@ -42,7 +42,7 @@ ifeq (${machine},ia64)
 
 	LIBCDF = /usr/local/lib/
 	INCCDF = /usr/include/
-	NETCDFCOMP = -L$(LIBCDF) -lnetcdf-ifort -I$(INCCDF)
+	NETCDFCOMP = -L$(LIBCDF) -lnetcdf -l netcdff -I$(INCCDF)
 
 	EXTRALIBS = 
   endif
@@ -57,7 +57,7 @@ ifeq (${machine},i686)
 
 	LIBCDF = /usr/local/lib/
 	INCCDF = /usr/local/include/
-	NETCDFCOMP = -L$(LIBCDF) -lnetcdf -I$(INCCDF)
+	NETCDFCOMP = -L$(LIBCDF) -lnetcdf -lnetcdff -I$(INCCDF)
 
 	EXTRALIBS = 
 else

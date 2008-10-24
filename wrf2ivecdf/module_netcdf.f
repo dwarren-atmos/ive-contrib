@@ -1273,14 +1273,15 @@
 
       integer, intent(in)           :: fid, ofid
 
-      integer :: rcode, natts,i,type,ilen,ival
-      integer::  strbeg, strend
-      integer*2::sval
-      integer*1::cval
-      real::     rval
+      integer :: rcode, natts,i,atype,ilen
+      integer::  strbeg, strend,ival(256)
+      integer*2::sval(256)
+      integer*1::cval(256)
+      real:: rval(256)
+      DOUBLE PRECISION :: dval(256)
       logical :: copy_global_attr
       character (len=1024) :: anam,aval
-
+      integer alen
       copy_global_attr = .true.
 
       rcode=nf_redef(ofid)
@@ -1296,6 +1297,9 @@
       endif
       do i=1,natts
          anam=' '
+         alen=0
+         atype=0
+         dval=-1.
          rcode = nf_inq_attname(fid, NF_GLOBAL,i,anam)
          if ( rcode .ne.  NF_NOERR) then
             copy_global_attr = .false.
@@ -1306,7 +1310,79 @@
      &        anam(ilen:ilen) .eq. char(0))
             ilen = ilen-1
          enddo
-         rcode=nf_copy_att(fid,NF_GLOBAL,anam(1:ilen),ofid,NF_GLOBAL)
+         write(6,*)anam(1:ilen)
+         rcode = nf_inq_att(fid, NF_GLOBAL, anam(1:ilen), atype, alen)
+         if ( rcode .ne.  NF_NOERR) then
+            copy_global_attr = .false.
+            return
+         endif
+         
+         
+         if(atype .eq. NF_CHAR) then
+            rcode=nf_get_att_text(fid,NF_GLOBAL,anam(1:ilen),aval)
+            if ( rcode .ne.  NF_NOERR) then
+               copy_global_attr = .false.
+               return
+            endif
+            rcode=nf_put_att_text(ofid,NF_GLOBAL,anam(1:ilen),
+     &           alen,aval)
+            write(6,*)'CHAR',aval(1:alen)
+            if ( rcode .ne.  NF_NOERR) then
+               copy_global_attr = .false.
+               return
+            endif
+         else
+            rcode=nf_get_att_double(fid,NF_GLOBAL,anam(1:ilen),dval(1))
+            if ( rcode .ne.  NF_NOERR) then
+               copy_global_attr = .false.
+               return
+            endif
+
+            if(atype .eq. NF_BYTE) then
+               cval=dval
+               rcode=nf_put_att_int1(ofid,NF_GLOBAL,anam(1:ilen),
+     &              NF_BYTE,alen,cval(1))
+               write(6,*)'BYTE',cval(1)
+               if ( rcode .ne.  NF_NOERR) then
+                  copy_global_attr = .false.
+                  return
+               endif
+            else if(atype .eq. NF_SHORT) then
+               sval=dval
+               rcode=nf_put_att_int2(ofid,NF_GLOBAL,anam(1:ilen),
+     &           NF_SHORT,alen,sval(1))
+               write(6,*)'SHORT',sval(1)
+               if ( rcode .ne.  NF_NOERR) then
+                  copy_global_attr = .false.
+                  return
+               endif
+            else if(atype .eq. NF_INT) then
+               ival=dval
+               rcode=nf_put_att_int(ofid,NF_GLOBAL,anam(1:ilen),
+     &              NF_INT,alen,ival(1))
+               write(6,*)'INT',ival(1)
+               if ( rcode .ne.  NF_NOERR) then
+                  copy_global_attr = .false.
+                  return
+               endif
+            else if(atype .eq. NF_FLOAT) then
+               rval=dval
+               rcode=nf_put_att_real(ofid,NF_GLOBAL,anam(1:ilen),
+     &              NF_FLOAT,alen,rval(1))
+               write(6,*)'REAL',rval(1)
+               if ( rcode .ne.  NF_NOERR) then
+                  copy_global_attr = .false.
+                  return
+               endif
+            else if(atype .eq. NF_DOUBLE) then
+               write(6,*)'DOUBLE',dval(1)
+               if ( rcode .ne.  NF_NOERR) then
+                  copy_global_attr = .false.
+                  return
+               endif
+            endif
+         endif
+!        rcode=nf_copy_att(fid,NF_GLOBAL,anam(1:ilen),ofid,NF_GLOBAL)
          if ( rcode .ne.  NF_NOERR) then
             copy_global_attr = .false.
             return
@@ -1319,6 +1395,5 @@
       endif
       return
       end function
-      
       END MODULE NETCDF
 

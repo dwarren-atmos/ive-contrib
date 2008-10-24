@@ -23,6 +23,7 @@ c      integer :: xmem,ymem,zmem
 
       integer, allocatable :: ix(:),iy(:),iz(:),it(:)
       integer, allocatable :: xmem(:),ymem(:),zmem(:)
+      logical :: gotlats, gotlons
       real, allocatable :: dat(:,:,:), time(:), znu(:), znw(:), hgt(:,:)
 
       real, allocatable :: pbtop(:,:), pbbot(:,:),
@@ -52,7 +53,9 @@ c     &/
 
       infile='./data/wrf_input.cdf'
       outfile='./data/wrf_doright.cdf'
-
+      
+      gotlats=.false.
+      gotlons=.false.
       nvars=11
       open(101, file=namefile, status='old')
       read(101,NML=input_data)
@@ -261,7 +264,6 @@ c      end do
         varnam=vars(k)
         write(6,100) 'COPPYING '//trim(varnam)
         allocate(dat(ix(k),iy(k),iz(k)))
-
         do n=1,it(k)
           dat(:,:,:) = missing
 
@@ -289,7 +291,7 @@ c      end do
         print *,' '
 
       end do
-      !Now lets copy the global attributes
+         !Now lets copy the global attributes
       if(.not. copy_global_attr(fid_in, fid_out)) then
          write(6,*)'Got an error when copying global attributes'
       endif

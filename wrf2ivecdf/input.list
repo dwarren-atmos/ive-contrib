@@ -1,6 +1,7 @@
+!must include XLAT and XLONG for transforms
 &input_data
-infile="./data/wrfout_d01_t0300_nosw_rh000_run2.cdf" 
-vars= "U" "V" "W" "PH" "PHB" "P" "PB" "T" "MU" "MUB" "PSFC" "T2"
-nvars=12 /
+infile="./data/wrfout_d01_2008-08-19_00:00:00"
+vars= "U" "V" "W" "PH" "PHB" "P" "PB" "T" "MU" "MUB" "PSFC" "T2" "XLAT" "XLONG"
+nvars=14 /
 &output_data
 outfile="./data/wrf_doright.cdf" /
