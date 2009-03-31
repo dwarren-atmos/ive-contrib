@@ -2,7 +2,7 @@
 
       USE NETCDF
 
-      character(len=80) :: infile, outfile
+      character(len=512) :: infile, outfile
       character(len=2), parameter :: path='./'
       character(len=10), parameter :: namefile='input.list'
 
@@ -10,7 +10,7 @@
       integer :: nvars
       integer :: n, i, j, k
       real, parameter :: missing = -9999.0
-      character(len=10) :: vars(80),varnam
+      character(len=10) :: realvars(100),vars(100),varnam
       character(len=80) :: units,descrp
 
       character(len=3) :: memord
@@ -36,8 +36,11 @@ c      integer :: xmem,ymem,zmem
 
       namelist/input_data/infile,nvars,vars
       namelist/output_data/outfile
-      data vars(1:11)/
-     &  'U','V','W','PH','PHB','P','PB','T','MU','MUB','PSFC'
+      data vars(1:12)/
+     &  'U','V','W','T','F','PH','PHB','P','PB','MU','MUB','PSFC'
+     &/
+      data realvars(1:12)/
+     &  'U','V','W','T','F','PH','PHB','P','PB','MU','MUB','PSFC'
      &/
 c      data vars/
 c     &, 'U','V','W','PH','PHB','P','PB','T','MU','MUB','PSFC'
@@ -60,12 +63,30 @@ c     &/
       open(101, file=namefile, status='old')
       read(101,NML=input_data)
       read(101,NML=output_data)
-
+      j=7
+      do i=1,nvars
+         if((vars(i) .ne. 'PH') .and.
+     &        (vars(i) .ne. 'PHB').and.
+     &        (vars(i) .ne. 'U').and.
+     &        (vars(i) .ne. 'V').and.
+     &        (vars(i) .ne. 'W').and.
+     &        (vars(i) .ne. 'T').and.
+     &        (vars(i) .ne. 'F').and.
+     &        (vars(i) .ne. 'P').and.
+     &        (vars(i) .ne. 'PB').and.
+     &        (vars(i) .ne. 'MU').and.
+     &        (vars(i) .ne. 'MUB').and.
+     &        (vars(i) .ne. 'PSFC')) then
+            j = j+1
+            realvars(j) = vars(i)
+         endif
+      enddo
+      nvars=j
       allocate(ix(nvars),iy(nvars),iz(nvars),it(nvars))
       allocate(xmem(nvars),ymem(nvars),zmem(nvars))
 
       call open_file(infile , nf_nowrite, fid_in )
-      call create_file(outfile, nf_write , fid_out)
+      call create_file(outfile, nf_write .or. nf_64bit_offset , fid_out)
       call define_mode(fid_out,stop_define)
 
       ! get variable dimensions
@@ -189,7 +210,7 @@ c      end do
       call define_mode(fid_out,stop_define)
 
       do k=1,nvars
-        varnam=vars(k)
+        varnam=realvars(k)
         write(6,'(2A)') 'DEFINING '//trim(varnam)
 
         stagger = get_varble_attr_char(fid_in, varnam, 'stagger')
@@ -261,7 +282,7 @@ c      end do
       end do
 
       do k=1,nvars
-        varnam=vars(k)
+        varnam=realvars(k)
         write(6,100) 'COPPYING '//trim(varnam)
         allocate(dat(ix(k),iy(k),iz(k)))
         do n=1,it(k)

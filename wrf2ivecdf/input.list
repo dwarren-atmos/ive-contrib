@@ -1,7 +1,7 @@
 !must include XLAT and XLONG for transforms
 &input_data
-infile="./data/wrfout_d01_2008-08-19_00:00:00"
+infile="/home/disk/flake/warren/src/WRFV3-constantwinds/run/wrfout_d01_2005-08-28_00:00:00"
 vars= "U" "V" "W" "PH" "PHB" "P" "PB" "T" "MU" "MUB" "PSFC" "T2" "XLAT" "XLONG"
 nvars=14 /
 &output_data
-outfile="./data/wrf_doright.cdf" /
+outfile="/home/flake/warren/clean/current_beta/ive/wrfout_2005-08-28_00:00:00.ive-2" /
