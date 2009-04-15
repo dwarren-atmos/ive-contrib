@@ -10,7 +10,7 @@
       integer :: nvars
       integer :: n, i, j, k
       real, parameter :: missing = -9999.0
-      character(len=10) :: realvars(100),vars(100),varnam
+      character(len=10) :: realvars(100),vars(100),varnam, varnam2
       character(len=80) :: units,descrp
 
       character(len=3) :: memord
@@ -36,12 +36,14 @@ c      integer :: xmem,ymem,zmem
 
       namelist/input_data/infile,nvars,vars
       namelist/output_data/outfile
-      data vars(1:12)/
-     &  'U','V','W','T','F','PH','PHB','P','PB','MU','MUB','PSFC'
-     &/
-      data realvars(1:12)/
-     &  'U','V','W','T','F','PH','PHB','P','PB','MU','MUB','PSFC'
-     &/
+      data vars(1:21)/
+     &  'U','V','W','T','F','PH','PHB','P','PB','MU','MUB','PSFC',
+     &  'XLAT', 'XLONG', 'MAPFAC_M', 'MAPFAC_U', 'MAPFAC_V' ,
+     &  'Pressure', 'MU_TOT', 'PH_TOT', 'PVORT' /
+      data realvars(1:21)/
+     &  'U','V','W','T','F','PH','PHB','P','PB','MU','MUB','PSFC',
+     &  'XLAT', 'XLONG', 'MAPFAC_M', 'MAPFAC_U', 'MAPFAC_V' ,
+     &  'Pressure', 'MU_TOT', 'PH_TOT', 'PVORT' /
 c      data vars/
 c     &, 'U','V','W','PH','PHB','P','PB','T','MU','MUB','PSFC'
 c     &, 'SR','POTEVP','SNOPCX','SOILTB','Q2','T2','TH2','U10'
@@ -59,11 +61,11 @@ c     &/
       
       gotlats=.false.
       gotlons=.false.
-      nvars=11
+      nvars=21
       open(101, file=namefile, status='old')
       read(101,NML=input_data)
       read(101,NML=output_data)
-      j=7
+      j=21
       do i=1,nvars
          if((vars(i) .ne. 'PH') .and.
      &        (vars(i) .ne. 'PHB').and.
@@ -76,6 +78,15 @@ c     &/
      &        (vars(i) .ne. 'PB').and.
      &        (vars(i) .ne. 'MU').and.
      &        (vars(i) .ne. 'MUB').and.
+     &        (vars(i) .ne. 'XLAT').and.
+     &        (vars(i) .ne. 'XLONG').and.
+     &        (vars(i) .ne. 'MAPFAC_M').and.
+     &        (vars(i) .ne. 'MAPFAC_U').and.
+     &        (vars(i) .ne. 'MAPFAC_V').and.
+     &        (vars(i) .ne. 'Pressure').and.
+     &        (vars(i) .ne. 'PH_TOT').and.
+     &        (vars(i) .ne. 'MU_TOT').and.
+     &        (vars(i) .ne. 'PVORT').and.
      &        (vars(i) .ne. 'PSFC')) then
             j = j+1
             realvars(j) = vars(i)
@@ -212,6 +223,10 @@ c      end do
       do k=1,nvars
         varnam=realvars(k)
         write(6,'(2A)') 'DEFINING '//trim(varnam)
+        if(varnam(1:8) .eq. 'Pressure')varnam='P'
+        if(varnam(1:6) .eq. 'PH_TOT')varnam='PH'
+        if(varnam(1:6) .eq. 'MU_TOT')varnam='MU'
+        if(varnam(1:5) .eq. 'PVORT')varnam='P'
 
         stagger = get_varble_attr_char(fid_in, varnam, 'stagger')
         memord = get_varble_attr_char(fid_in, varnam, 'MemoryOrder')
@@ -256,10 +271,21 @@ c      end do
         ! start define mode for new variables
         call define_mode(fid_out,start_define)
 
-        rcode=nf_def_var(fid_out,trim(varnam),nf_float,4,dimid,varid)
-
         units = get_varble_attr_char(fid_in,trim(varnam),'units')
         descrp = get_varble_attr_char(fid_in,trim(varnam),'description')
+
+!     set it back for the "special" ones
+        varnam=realvars(k)
+        if(varnam(1:8) .eq. 'Pressure')descrp='total pressure'
+        if(varnam(1:6) .eq. 'PH_TOT')descrp='total geopotential'
+        if(varnam(1:6) .eq. 'MU_TOT')descrp=
+     &       'total dry air mass in column'
+        if(varnam(1:5) .eq. 'PVORT') then 
+           descrp='potential vorticity'
+           units = '10^-6*K*m*m/kg/s'
+        endif
+        rcode=nf_def_var(fid_out,trim(varnam),nf_float,4,dimid,varid)
+
 
         xmin= stagx*dx ; xmax=(real(ix(k)-1)+stagx)*dx
         ymin= stagy*dy ; ymax=(real(iy(k)-1)+stagy)*dy
@@ -284,34 +310,41 @@ c      end do
       do k=1,nvars
         varnam=realvars(k)
         write(6,100) 'COPPYING '//trim(varnam)
-        allocate(dat(ix(k),iy(k),iz(k)))
-        do n=1,it(k)
-          dat(:,:,:) = missing
-
-          if(zmem(k).eq.0) then
-            call get_variable2d(fid_in, trim(varnam), 
-     &                          ix(k), iy(k), n, dat(:,:,1))
-          elseif(ymem(k).eq.0) then
-            call get_variable2d(fid_in, trim(varnam), 
-     &                          ix(k), iz(k), n, dat(:,1,:))
-          elseif(xmem(k).eq.0) then
-            call get_variable2d(fid_in, trim(varnam), 
-     &                          iy(k), iz(k), n, dat(1,:,:))
-          else
-            call get_variable3d(fid_in, trim(varnam), 
-     &                          ix(k), iy(k), iz(k), n, dat)
-          end if
-
-          call write_variable3d(fid_out, trim(varnam), 
-     &                          ix(k), iy(k), iz(k), n, dat)
-
-          write(6,100) '.'
-        end do
-
-        deallocate(dat)
-        print *,' '
-
-      end do
+        if(varnam(1:8) .eq. 'Pressure' .or.
+     &       varnam(1:6) .eq. 'PH_TOT' .or.
+     &       varnam(1:6) .eq. 'MU_TOT' .or.
+     &       varnam(1:5) .eq. 'PVORT') then
+           call copy_compound(varnam, fid_in, fid_out, ix(k),
+     &          iy(k), iz(k), it(k))
+        else
+           allocate(dat(ix(k),iy(k),iz(k)))
+           do n=1,it(k)
+              dat(:,:,:) = missing
+              
+              if(zmem(k).eq.0) then
+                 call get_variable2d(fid_in, trim(varnam), 
+     &                ix(k), iy(k), n, dat(:,:,1))
+              elseif(ymem(k).eq.0) then
+                 call get_variable2d(fid_in, trim(varnam), 
+     &                ix(k), iz(k), n, dat(:,1,:))
+              elseif(xmem(k).eq.0) then
+                 call get_variable2d(fid_in, trim(varnam), 
+     &                iy(k), iz(k), n, dat(1,:,:))
+              else
+                 call get_variable3d(fid_in, trim(varnam), 
+     &                ix(k), iy(k), iz(k), n, dat)
+              end if
+              
+              call write_variable3d(fid_out, trim(varnam), 
+     &             ix(k), iy(k), iz(k), n, dat)
+              
+              write(6,100) '.'
+           end do
+           
+           deallocate(dat)
+           print *,' '
+        endif
+      enddo
          !Now lets copy the global attributes
       if(.not. copy_global_attr(fid_in, fid_out)) then
          write(6,*)'Got an error when copying global attributes'
@@ -443,3 +476,143 @@ c        if(rcode.ne.nf_noerr) call handle_err('x_max')
       end if
 
       end
+!
+!
+!
+      subroutine copy_compound (varnam, in, out, nx, ny, nz, nt)
+
+      USE NETCDF
+      character *(*),intent(in) :: varnam
+      integer,intent(in) ::in, out, nx, ny, nz, nt
+
+      character (10) :: v1, v2, v3, v4
+      real,allocatable :: d1(:,:,:), d2(:,:,:)
+      real, allocatable :: pv(:,:,:), u(:,:,:), v(:,:,:),
+     &     p(:,:,:), t(:,:,:), mu(:,:), mv(:,:), mf(:,:), cor(:,:)
+      real :: dx, dy, mm, dsx, dsy, dudy, dvdx, avort, dp, dudp, 
+     &     dvdp, dtdp, dtdx, dtdy
+      
+      integer :: i, j, k, n, ip1, im1, jp1, jm1, kp1, km1, stat
+      if(varnam(1:5) .eq. 'PVORT') then
+         allocate (pv(nx,ny,nz))
+         allocate (u(nx,ny,nz))
+         allocate (v(nx,ny,nz))
+         allocate (p(nx,ny,nz))
+         allocate (t(nx,ny,nz))
+         allocate (cor(nx,ny))
+         allocate (mu(nx,ny))
+         allocate (mv(nx,ny))
+         allocate (mf(nx,ny))
+         allocate(d1(nx+1,ny,nz))
+         allocate(d2(nx,ny+1,nz))
+         do n=1, nt
+            call get_variable3d(in, 'P', 
+     &           nx, ny, nz, n, p)
+            call get_variable3d(in, 'PB', 
+     &           nx, ny, nz, n, t)
+            p = p + t
+            call get_variable3d(in, 'T', 
+     &           nx, ny, nz, n, t)
+            call get_variable3d(in, 'U', 
+     &           nx+1, ny, nz, n, d1)
+            forall(i=1:nx) u(i,:,:)=(d1(i,:,:)+d1(i+i,:,:))/2.0 
+            call get_variable3d(in, 'V', 
+     &                nx, ny+1, nz, n, d2)
+            forall(j=1:ny) v(:,j,:)=(d2(:,j,:)+d2(:,j+1,:))/2.0 
+            call get_variable2d(in, 'F', 
+     &           nx, ny, n, cor)
+            call get_variable2d(in, 'MAPFAC_M', 
+     &           nx, ny, n, mf)
+            call get_variable2d(in, 'MAPFAC_U', 
+     &           nx+1, ny, n, d1(:,:,1))
+            forall(i=1:nx) mu(i,:)=(d1(i,:,1)+d1(i+1,:,1))/2.0 
+            call get_variable2d(in, 'MAPFAC_V', 
+     &           nx, ny+1, n, d2(:,:,1))
+            forall(j=1:ny) mv(:,j)=(d2(:,j,1)+d2(:,j+1,1))/2.0 
+            stat = nf_get_att_real(in, nf_global, 'DX', dx)
+            stat = nf_get_att_real(in, nf_global, 'DX', dy)
+            
+            do k=1,nz
+               kp1 = min(k+1, nz)
+               km1 = max(k-1, 1)
+               do j=1,ny 
+                  jp1 = min(j+1, ny)
+                  jm1 = max(j-1, 1)
+                  dsy =(jp1-jm1)*dy
+                  do i=1,nx
+                     ip1 = min(i+1, nx)
+                     im1 = max(i-1, 1)
+                     dsx =(ip1-im1)*dx
+                     mm = mf(i,j)**2
+                     dudy = 0.50*(u(i,jp1,k)/mu(i,jp1) +
+     &                    u(ip1,jp1,k)/mu(ip1,jp1) -
+     &                    u(i,jm1,k)/mu(i,jm1) -
+     &                    u(ip1,jm1,k)/mu(ip1,jm1))/dsy*mm
+                     dvdx = 0.50*(v(ip1,j,k)/mv(ip1,j) +
+     &                    v(ip1,jp1,k)/mv(ip1,jp1) -
+     &                    v(im1,j,k)/mv(im1,j) -
+     &                    v(im1,jp1,k)/mv(im1,jp1))/dsx*mm
+                     avort = dvdx - dudy + cor(i,j)
+                     
+                     dp = p(i,j,kp1) - p(i,j,km1)
+                     dudp = 0.50*(u(i,j,kp1)+u(ip1,j,kp1) -
+     &                    u(i,j,km1) - u(ip1,j,km1))/dp
+                     dvdp = 0.50*(v(i,j,kp1)+v(i,jp1,kp1) -
+     &                    v(i,j,km1) - v(i,jp1,km1))/dp
+                     dtdp = (t(i,j,kp1) - t(i,j,km1))/dp
+                     dtdx = (t(ip1,j,k) - t(im1,j,k))/
+     &                    dsx*mf(i,j)
+                     dtdy = (t(i,jp1,k) - t(i,jm1,k))/
+     &                    dsy*mf(i,j)
+                     
+                     pv(i,j,k) = -9.810*(dtdp*avort - dvdp*dtdx +
+     &                    dudp*dtdy)*1000000.0
+                     
+                  end do
+               end do 
+            end do 
+            call write_variable3d(out, 'PVORT', 
+     &           nx, ny, nz, n, pv)
+         end do
+         deallocate (pv)
+         deallocate (u)
+         deallocate (v)
+         deallocate (p)
+         deallocate (t)
+         deallocate (cor)
+         deallocate (mu)
+         deallocate (mv)
+         deallocate (mf)
+         deallocate(d1)
+         deallocate(d2)
+      else
+         if(varnam(1:8) .eq. 'Pressure') then 
+            v1='P'
+            v2='PB'
+         else if(varnam(1:6) .eq. 'PH_TOT') then
+            v1 = 'PH'
+            v2 = 'PHB'
+         else if(varnam(1:6) .eq. 'MU_TOT') then
+            v1 = 'MU'
+            v2 = 'MUB'
+         endif
+!     all these are 4 d vars
+         
+            allocate(d1(nx,ny,nz))
+            allocate(d2(nx,ny,nz))
+         do n=1, nt
+            call get_variable3d(in, trim(v1), 
+     &           nx, ny, nz, n, d1)
+            call get_variable3d(in, trim(v2), 
+     &           nx, ny, nz, n, d2)
+!     f90 vector math - yeah no do loops!!!
+            d1 = d1 + d2
+            call write_variable3d(out, trim(varnam), 
+     &           nx, ny, nz, n, d1)
+         enddo
+         deallocate(d1)
+         deallocate(d2)
+      endif
+      return
+      end
+      
