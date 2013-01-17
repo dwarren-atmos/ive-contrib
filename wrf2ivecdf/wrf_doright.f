@@ -36,12 +36,20 @@ c      integer :: xmem,ymem,zmem
 
       namelist/input_data/infile,nvars,vars
       namelist/output_data/outfile
-      data vars(1:21)/
-     &  'U','V','W','T','F','PH','PHB','P','PB','MU','MUB','PSFC',
+!      data vars(1:21)/
+!     &  'U','V','W','T','F','PH','PHB','P','PB','MU','MUB','PSFC',
+!     &  'XLAT', 'XLONG', 'MAPFAC_M', 'MAPFAC_U', 'MAPFAC_V' ,
+!     &  'Pressure', 'MU_TOT', 'PH_TOT', 'PVORT' /
+!      data realvars(1:21)/
+!     &  'U','V','W','T','F','PH','PHB','P','PB','MU','MUB','PSFC',
+!     &  'XLAT', 'XLONG', 'MAPFAC_M', 'MAPFAC_U', 'MAPFAC_V' ,
+!     &  'Pressure', 'MU_TOT', 'PH_TOT', 'PVORT' /
+      data vars(1:20)/
+     &  'U','V','W','T','PH','PHB','P','PB','MU','MUB','PSFC',
      &  'XLAT', 'XLONG', 'MAPFAC_M', 'MAPFAC_U', 'MAPFAC_V' ,
      &  'Pressure', 'MU_TOT', 'PH_TOT', 'PVORT' /
-      data realvars(1:21)/
-     &  'U','V','W','T','F','PH','PHB','P','PB','MU','MUB','PSFC',
+      data realvars(1:20)/
+     &  'U','V','W','T','PH','PHB','P','PB','MU','MUB','PSFC',
      &  'XLAT', 'XLONG', 'MAPFAC_M', 'MAPFAC_U', 'MAPFAC_V' ,
      &  'Pressure', 'MU_TOT', 'PH_TOT', 'PVORT' /
 c      data vars/
@@ -61,11 +69,11 @@ c     &/
       
       gotlats=.false.
       gotlons=.false.
-      nvars=21
+      nvars=20
       open(101, file=namefile, status='old')
       read(101,NML=input_data)
       read(101,NML=output_data)
-      j=21
+      j=20
       do i=1,nvars
          if((vars(i) .ne. 'PH') .and.
      &        (vars(i) .ne. 'PHB').and.
@@ -97,7 +105,8 @@ c     &/
       allocate(xmem(nvars),ymem(nvars),zmem(nvars))
 
       call open_file(infile , nf_nowrite, fid_in )
-      call create_file(outfile, nf_write .or. nf_64bit_offset , fid_out)
+      call create_file(trim(outfile), nf_64bit_offset , 
+     &     fid_out)
       call define_mode(fid_out,stop_define)
 
       ! get variable dimensions
@@ -158,7 +167,8 @@ c      end do
         rcode=nf_put_att_text(fid_out,varid,'units',0,'')
 
       dimid(1) = nxid ; dimid(2) = nyid
-      rcode=nf_def_var(fid_out,'HGT',nf_float,2,dimid(1:2),varid)
+      dimid(3) = oneid; dimid(4) = timeid
+      rcode=nf_def_var(fid_out,'HGT',nf_float,4,dimid,varid)
         rcode=nf_put_att_int(fid_out,varid,'no_button',nf_int,1,1)
         rcode=nf_put_att_text(fid_out,varid,'units',6,'meters')
 
@@ -178,9 +188,10 @@ c      end do
       call get_variable1d(fid_in, 'ZNW', nzp1, 1, znw)
       call write_variable_vec(fid_out, 'ZNW', nzp1, znw)
 
-      call get_variable2d(fid_in, 'HGT', nx, ny, 1, hgt)
-      call write_variable2d(fid_out, 'HGT', nx, ny, 1, hgt)
-
+      do n=1,nt
+         call get_variable3d(fid_in, 'HGT', nx, ny, 1, n, hgt)
+         call write_variable3d(fid_out, 'HGT', nx, ny, 1, n, hgt)
+      enddo
       call get_variable1d(fid_in, 'P_TOP', 1, 1, p_top)
       call write_variable_vec(fid_out, 'P_TOP', 1, p_top)
       deallocate(time,hgt)
@@ -519,8 +530,8 @@ c        if(rcode.ne.nf_noerr) call handle_err('x_max')
             call get_variable3d(in, 'V', 
      &                nx, ny+1, nz, n, d2)
             forall(j=1:ny) v(:,j,:)=(d2(:,j,:)+d2(:,j+1,:))/2.0 
-            call get_variable2d(in, 'F', 
-     &           nx, ny, n, cor)
+!            call get_variable2d(in, 'F', 
+!     &           nx, ny, n, cor)
             call get_variable2d(in, 'MAPFAC_M', 
      &           nx, ny, n, mf)
             call get_variable2d(in, 'MAPFAC_U', 
